@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Read(//c/Users/yukan/.claude/skills/ui-ux-pro-max/**)",
+      "Bash(python3 scripts/search.py \"finance analytics minimalist modern elegant\" --design-system -p \"Value Analyzer\" -f markdown)",
+      "Bash(cd C:/Users/yukan/.claude/skills/ui-ux-pro-max && python scripts/search.py \"finance analytics minimalist modern elegant\" --design-system -p \"Value Analyzer\" -f markdown)",
+      "Bash(cd C:/Users/yukan/.claude/skills/ui-ux-pro-max && python scripts/search.py \"elegant modern soft neutral\" --domain color -n 5)",
+      "Bash(cd C:/Users/yukan/.claude/skills/ui-ux-pro-max && python scripts/search.py \"animation transition card\" --domain ux -n 5)",
+      "Bash(cd C:/Users/yukan/.claude/skills/ui-ux-pro-max && python scripts/search.py \"form input settings profile age\" --domain ux -n 5)"
+    ]
+  }
+}
