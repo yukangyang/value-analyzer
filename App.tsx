@@ -10,10 +10,13 @@ import {
   Pressable,
   Animated,
   ActivityIndicator,
-  Alert
+  Alert,
+  Platform,
+  StatusBar
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaymentRecord, ReturnRecord, AnalysisResult } from './src/types';
 import { ValueCalculator } from './src/utils/calculator';
 import { RecordInput } from './src/components/RecordInput';
@@ -21,7 +24,6 @@ import { AnalysisDisplay } from './src/components/AnalysisDisplay';
 import { RippleButton } from './src/components/RippleButton';
 import { DataManager } from './src/components/DataManager';
 import { DrawerMenu } from './src/components/DrawerMenu';
-import { DogLogo } from './src/components/DogLogo';
 import { storage } from './src/utils/storage';
 
 export default function App() {
@@ -122,95 +124,99 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar style="dark" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366F1" />
-          <Text style={styles.loadingText}>加载数据中...</Text>
-        </View>
-      </SafeAreaView>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.container}>
+          <ExpoStatusBar style="dark" />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#6366F1" />
+            <Text style={styles.loadingText}>加载数据中...</Text>
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <ExpoStatusBar style="dark" />
 
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => setShowDrawer(true)}
-          style={({ pressed }) => [
-            styles.logoButton,
-            pressed && styles.logoButtonPressed
-          ]}
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => setShowDrawer(true)}
+            style={({ pressed }) => [
+              styles.logoButton,
+              pressed && styles.logoButtonPressed
+            ]}
+          >
+            <Ionicons name="menu" size={28} color="#6366F1" />
+          </Pressable>
+        </View>
+
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
         >
-          <DogLogo size={36} color="#6366F1" />
-        </Pressable>
-      </View>
+          <AnalysisDisplay result={result} payments={payments} returns={returns} />
+        </ScrollView>
 
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <AnalysisDisplay result={result} payments={payments} returns={returns} />
-      </ScrollView>
-
-      <View style={styles.actionBar}>
-        <RippleButton
-          onPress={() => setShowPaymentInput(true)}
-          style={styles.actionButton}
-          rippleColor="rgba(239, 68, 68, 0.2)"
-        >
-          <View style={styles.actionButtonContent}>
-            <View style={[styles.actionIcon, styles.actionIconPayment]}>
-              <Ionicons name="arrow-down-circle" size={24} color="#EF4444" />
+        <View style={styles.actionBar}>
+          <RippleButton
+            onPress={() => setShowPaymentInput(true)}
+            style={styles.actionButton}
+            rippleColor="rgba(239, 68, 68, 0.2)"
+          >
+            <View style={styles.actionButtonContent}>
+              <View style={[styles.actionIcon, styles.actionIconPayment]}>
+                <Ionicons name="arrow-down-circle" size={24} color="#EF4444" />
+              </View>
+              <Text style={styles.actionLabel}>记录付出</Text>
             </View>
-            <Text style={styles.actionLabel}>记录付出</Text>
-          </View>
-        </RippleButton>
-        <RippleButton
-          onPress={() => setShowReturnInput(true)}
-          style={styles.actionButton}
-          rippleColor="rgba(16, 185, 129, 0.2)"
-        >
-          <View style={styles.actionButtonContent}>
-            <View style={[styles.actionIcon, styles.actionIconReturn]}>
-              <Ionicons name="arrow-up-circle" size={24} color="#10B981" />
+          </RippleButton>
+          <RippleButton
+            onPress={() => setShowReturnInput(true)}
+            style={styles.actionButton}
+            rippleColor="rgba(16, 185, 129, 0.2)"
+          >
+            <View style={styles.actionButtonContent}>
+              <View style={[styles.actionIcon, styles.actionIconReturn]}>
+                <Ionicons name="arrow-up-circle" size={24} color="#10B981" />
+              </View>
+              <Text style={styles.actionLabel}>记录回报</Text>
             </View>
-            <Text style={styles.actionLabel}>记录回报</Text>
-          </View>
-        </RippleButton>
-      </View>
+          </RippleButton>
+        </View>
 
-      <RecordInput
-        visible={showPaymentInput}
-        type="payment"
-        onClose={() => setShowPaymentInput(false)}
-        onSave={handleAddPayment}
-      />
+        <RecordInput
+          visible={showPaymentInput}
+          type="payment"
+          onClose={() => setShowPaymentInput(false)}
+          onSave={handleAddPayment}
+        />
 
-      <RecordInput
-        visible={showReturnInput}
-        type="return"
-        onClose={() => setShowReturnInput(false)}
-        onSave={handleAddReturn}
-      />
+        <RecordInput
+          visible={showReturnInput}
+          type="return"
+          onClose={() => setShowReturnInput(false)}
+          onSave={handleAddReturn}
+        />
 
-      <DataManager
-        visible={showDataManager}
-        onClose={() => setShowDataManager(false)}
-        onDataCleared={handleDataCleared}
-      />
+        <DataManager
+          visible={showDataManager}
+          onClose={() => setShowDataManager(false)}
+          onDataCleared={handleDataCleared}
+        />
 
-      <DrawerMenu
-        visible={showDrawer}
-        onClose={() => setShowDrawer(false)}
-        onOpenSettings={() => setShowDataManager(true)}
-        currentAge={currentAge}
-        onAgeChange={setCurrentAge}
-      />
-    </SafeAreaView>
+        <DrawerMenu
+          visible={showDrawer}
+          onClose={() => setShowDrawer(false)}
+          onOpenSettings={() => setShowDataManager(true)}
+          currentAge={currentAge}
+          onAgeChange={setCurrentAge}
+        />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
@@ -222,7 +228,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: Platform.OS === 'ios' ? 16 : StatusBar.currentHeight || 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E4E4E7',

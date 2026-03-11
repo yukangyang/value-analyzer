@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { PaymentRecord, ReturnRecord } from '../types';
 
 const DB_NAME = 'ValueAnalyzerDB';
@@ -224,43 +224,44 @@ class IndexedDBAdapter implements StorageAdapter {
   }
 }
 
-// AsyncStorage 实现（移动端）
-class AsyncStorageAdapter implements StorageAdapter {
+// SecureStore 实现（移动端）
+class SecureStoreAdapter implements StorageAdapter {
   private getKey(store: string, id?: string): string {
-    return id ? `${DB_NAME}:${store}:${id}` : `${DB_NAME}:${store}`;
+    // SecureStore 要求 key 只能包含字母数字、"."、"-" 和 "_"
+    return id ? `${DB_NAME}.${store}.${id}` : `${DB_NAME}.${store}`;
   }
 
   private getListKey(store: string): string {
-    return `${DB_NAME}:${store}:list`;
+    return `${DB_NAME}.${store}.list`;
   }
 
   async init(): Promise<void> {
-    // AsyncStorage 不需要初始化
+    // SecureStore 不需要初始化
   }
 
   async addPayment(record: PaymentRecord): Promise<void> {
     const key = this.getKey(PAYMENT_STORE, record.id);
     const listKey = this.getListKey(PAYMENT_STORE);
 
-    await AsyncStorage.setItem(key, JSON.stringify(record));
+    await SecureStore.setItemAsync(key, JSON.stringify(record));
 
-    const listStr = await AsyncStorage.getItem(listKey);
+    const listStr = await SecureStore.getItemAsync(listKey);
     const list = listStr ? JSON.parse(listStr) : [];
     if (!list.includes(record.id)) {
       list.push(record.id);
-      await AsyncStorage.setItem(listKey, JSON.stringify(list));
+      await SecureStore.setItemAsync(listKey, JSON.stringify(list));
     }
   }
 
   async getAllPayments(): Promise<PaymentRecord[]> {
     const listKey = this.getListKey(PAYMENT_STORE);
-    const listStr = await AsyncStorage.getItem(listKey);
+    const listStr = await SecureStore.getItemAsync(listKey);
     const list = listStr ? JSON.parse(listStr) : [];
 
     const records: PaymentRecord[] = [];
     for (const id of list) {
       const key = this.getKey(PAYMENT_STORE, id);
-      const recordStr = await AsyncStorage.getItem(key);
+      const recordStr = await SecureStore.getItemAsync(key);
       if (recordStr) {
         const record = JSON.parse(recordStr);
         records.push({
@@ -277,37 +278,37 @@ class AsyncStorageAdapter implements StorageAdapter {
     const key = this.getKey(PAYMENT_STORE, id);
     const listKey = this.getListKey(PAYMENT_STORE);
 
-    await AsyncStorage.removeItem(key);
+    await SecureStore.deleteItemAsync(key);
 
-    const listStr = await AsyncStorage.getItem(listKey);
+    const listStr = await SecureStore.getItemAsync(listKey);
     const list = listStr ? JSON.parse(listStr) : [];
     const newList = list.filter((itemId: string) => itemId !== id);
-    await AsyncStorage.setItem(listKey, JSON.stringify(newList));
+    await SecureStore.setItemAsync(listKey, JSON.stringify(newList));
   }
 
   async addReturn(record: ReturnRecord): Promise<void> {
     const key = this.getKey(RETURN_STORE, record.id);
     const listKey = this.getListKey(RETURN_STORE);
 
-    await AsyncStorage.setItem(key, JSON.stringify(record));
+    await SecureStore.setItemAsync(key, JSON.stringify(record));
 
-    const listStr = await AsyncStorage.getItem(listKey);
+    const listStr = await SecureStore.getItemAsync(listKey);
     const list = listStr ? JSON.parse(listStr) : [];
     if (!list.includes(record.id)) {
       list.push(record.id);
-      await AsyncStorage.setItem(listKey, JSON.stringify(list));
+      await SecureStore.setItemAsync(listKey, JSON.stringify(list));
     }
   }
 
   async getAllReturns(): Promise<ReturnRecord[]> {
     const listKey = this.getListKey(RETURN_STORE);
-    const listStr = await AsyncStorage.getItem(listKey);
+    const listStr = await SecureStore.getItemAsync(listKey);
     const list = listStr ? JSON.parse(listStr) : [];
 
     const records: ReturnRecord[] = [];
     for (const id of list) {
       const key = this.getKey(RETURN_STORE, id);
-      const recordStr = await AsyncStorage.getItem(key);
+      const recordStr = await SecureStore.getItemAsync(key);
       if (recordStr) {
         const record = JSON.parse(recordStr);
         records.push({
@@ -324,22 +325,22 @@ class AsyncStorageAdapter implements StorageAdapter {
     const key = this.getKey(RETURN_STORE, id);
     const listKey = this.getListKey(RETURN_STORE);
 
-    await AsyncStorage.removeItem(key);
+    await SecureStore.deleteItemAsync(key);
 
-    const listStr = await AsyncStorage.getItem(listKey);
+    const listStr = await SecureStore.getItemAsync(listKey);
     const list = listStr ? JSON.parse(listStr) : [];
     const newList = list.filter((itemId: string) => itemId !== id);
-    await AsyncStorage.setItem(listKey, JSON.stringify(newList));
+    await SecureStore.setItemAsync(listKey, JSON.stringify(newList));
   }
 
   async saveSetting(key: string, value: any): Promise<void> {
     const storageKey = this.getKey(SETTINGS_STORE, key);
-    await AsyncStorage.setItem(storageKey, JSON.stringify({ key, value }));
+    await SecureStore.setItemAsync(storageKey, JSON.stringify({ key, value }));
   }
 
   async getSetting(key: string): Promise<any> {
     const storageKey = this.getKey(SETTINGS_STORE, key);
-    const dataStr = await AsyncStorage.getItem(storageKey);
+    const dataStr = await SecureStore.getItemAsync(storageKey);
     if (dataStr) {
       const data = JSON.parse(dataStr);
       return data.value;
@@ -348,9 +349,19 @@ class AsyncStorageAdapter implements StorageAdapter {
   }
 
   async clearAll(): Promise<void> {
-    const keys = await AsyncStorage.getAllKeys();
-    const dbKeys = keys.filter(key => key.startsWith(`${DB_NAME}:`));
-    await AsyncStorage.multiRemove(dbKeys);
+    // SecureStore 不支持批量删除，需要逐个删除
+    const stores = [PAYMENT_STORE, RETURN_STORE, SETTINGS_STORE];
+    for (const store of stores) {
+      const listKey = this.getListKey(store);
+      const listStr = await SecureStore.getItemAsync(listKey);
+      const list = listStr ? JSON.parse(listStr) : [];
+      
+      for (const id of list) {
+        const key = this.getKey(store, id);
+        await SecureStore.deleteItemAsync(key);
+      }
+      await SecureStore.deleteItemAsync(listKey);
+    }
   }
 
   async exportData(): Promise<string> {
@@ -413,7 +424,7 @@ class StorageManager implements StorageAdapter {
   constructor() {
     this.adapter = Platform.OS === 'web'
       ? new IndexedDBAdapter()
-      : new AsyncStorageAdapter();
+      : new SecureStoreAdapter();
   }
 
   async init(): Promise<void> {

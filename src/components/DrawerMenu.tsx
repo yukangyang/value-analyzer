@@ -8,10 +8,13 @@ import {
   Animated,
   Dimensions,
   ScrollView,
-  TextInput
+  TextInput,
+  Platform,
+  StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RippleButton } from './RippleButton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
   visible: boolean;
@@ -26,6 +29,7 @@ const DRAWER_WIDTH = Math.min(Dimensions.get('window').width * 0.8, 320);
 export const DrawerMenu: React.FC<Props> = ({ visible, onClose, onOpenSettings, currentAge, onAgeChange }) => {
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (visible) {
@@ -77,7 +81,8 @@ export const DrawerMenu: React.FC<Props> = ({ visible, onClose, onOpenSettings, 
           style={[
             styles.drawer,
             {
-              transform: [{ translateX: slideAnim }]
+              transform: [{ translateX: slideAnim }],
+              paddingTop: insets.top
             }
           ]}
         >
@@ -196,7 +201,7 @@ const styles = StyleSheet.create({
   },
   drawerHeader: {
     padding: 24,
-    paddingTop: 48,
+    paddingTop: Platform.OS === 'ios' ? 24 : 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E4E4E7',
     alignItems: 'center'
